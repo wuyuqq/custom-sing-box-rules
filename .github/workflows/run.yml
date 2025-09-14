@@ -80,6 +80,7 @@ jobs:
       # 下载 sing-box 核心
       - name: Download sing-box core
         run: |
+          mkdir -p ./tools/
           wget "https://github.com/SagerNet/sing-box/releases/download/v1.10.1/sing-box-1.10.1-linux-amd64.tar.gz" -O - | tar -zxf - -C ./tools/
           mv -f ./tools/sing-box-1.10.1-linux-amd64/sing-box ./tools/
 
@@ -89,7 +90,15 @@ jobs:
           cd ./tools/
           chmod +x convert.sh && ./convert.sh
           rm -rf ./sing-box* LICENSE ./rules*
+          mkdir -p ../sing-box-ruleset/
           cp -f ./*.json ./*.srs ../sing-box-ruleset/
+
+      # 上传构建产物（artifact），方便直接下载
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sing-box-ruleset
+          path: ./sing-box-ruleset/
 
       # 提交到 sing-box-ruleset 分支
       - name: Commit and push ruleset
