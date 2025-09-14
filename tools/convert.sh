@@ -1,49 +1,49 @@
 #!/bin/bash
-list=($(ls ./rules/))
 
-wrap_json() {
-    local file=$1 key=$2
-    [ -f "$file" ] || return
-    sed -i 's/^/        "/' "$file"
-    sed -i 's/$/",/' "$file"
-    sed -i "1s/^/      \"$key\": [\n/" "$file"
-    sed -i '$ s/,$/\n      ],/' "$file"
+format_json_array() {
+    local key="$1" file="$2"
+    awk -v k="$key" 'BEGIN {
+        print "      \"" k "\": ["
+    }
+    { printf "        \"%s\",\n", $0 }
+    END {
+        sub(/,$/, "", out)
+        print substr(out, 1, length(out)-1)
+        print "      ],"
+    }' "$file" | sed '$!N;s/,\n$/\n/'
 }
 
-for ((i = 0; i < ${#list[@]}; i++)); do
-    mkdir -p "${list[i]}"
-    yaml="./rules/${list[i]}/${list[i]}.yaml"
+for dir in ./rules/*/; do
+    name=$(basename "$dir")
+    mkdir -p "$name"
 
-    # 归类
-    grep '^DOMAIN-SUFFIX,' "$yaml" | sed 's/^DOMAIN-SUFFIX,//' > "${list[i]}/suffix.json" || true
-    grep '^DOMAIN,' "$yaml" | sed 's/^DOMAIN,//' > "${list[i]}/domain.json" || true
-    grep '^DOMAIN-KEYWORD,' "$yaml" | sed 's/^DOMAIN-KEYWORD,//' > "${list[i]}/keyword.json" || true
-    grep '^IP-CIDR' "$yaml" | sed -e 's/^IP-CIDR,//' -e 's/^IP-CIDR6,//' -e 's/,no-resolve//' > "${list[i]}/ipcidr.json" || true
+    declare -A patterns=(
+        ["suffix.json"]='^DOMAIN-SUFFIX,'
+        ["domain.json"]='^DOMAIN,'
+        ["keyword.json"]='^DOMAIN-KEYWORD,'
+        ["ipcidr.json"]='^IP-CIDR'
+    )
 
-    # 转成 JSON
-    wrap_json "${list[i]}/domain.json" "domain"
-    wrap_json "${list[i]}/suffix.json" "domain_suffix"
-    wrap_json "${list[i]}/keyword.json" "domain_keyword"
-    wrap_json "${list[i]}/ipcidr.json" "ip_cidr"
-
-    # 合并 JSON
-    json_file="${list[i]}.json"
-    [ -f "$json_file" ] && rm -f "$json_file"
+    for file 在 "${!patterns[@]}"; do
+        grep -E "${patterns[$file]}" "$dir/$name.yaml" \
+            | sed -E 's/^(DOMAIN(-SUFFIX|-KEYWORD)?|IP-CIDR6?),//; s/,no-resolve//g' \
+            > "$name/$file" || true
+    done
 
     {
         echo "{"
         echo "  \"version\": 2,"
         echo "  \"rules\": ["
         echo "    {"
-        for f in domain.json suffix.json keyword.json ipcidr.json; do
-            [ -f "${list[i]}/$f" ] && cat "${list[i]}/$f"
-        done
+        [ -s "$name/domain.json" ] && format_json_array "domain" "$name/domain.json"
+        [ -s "$name/suffix.json" ] && format_json_array "domain_suffix" "$name/suffix.json"
+        [ -s "$name/keyword.json" ] && format_json_array "domain_keyword" "$name/keyword.json"
+        [ -s "$name/ipcidr.json" ] && format_json_array "ip_cidr" "$name/ipcidr.json"
         echo "    }"
         echo "  ]"
         echo "}"
-    } > "$json_file"
+    } > "$name.json"
 
-    # 清理临时文件夹并生成 srs
-    rm -r "${list[i]}"
-    ./sing-box rule-set compile "$json_file" -o "${list[i]}.srs"
+    rm -r "$name"
+    ./sing-box rule-set compile "$name.json" -o "$name.srs"
 done
