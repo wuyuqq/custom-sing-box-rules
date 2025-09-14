@@ -49,6 +49,17 @@ for ((i = 0; i < ${#list[@]}; i++)); do
         sed -i '$ s/,$/\n      ],/g' ${list[i]}/ipcidr.json
     fi
 
+    # 修复最后一个数组结尾不要逗号
+    if [ -f "${list[i]}/ipcidr.json" ]; then
+        sed -i '$ s/,$/\n      ]/g' ${list[i]}/ipcidr.json
+    elif [ -f "${list[i]}/keyword.json" ]; then
+        sed -i '$ s/,$/\n      ]/g' ${list[i]}/keyword.json
+    elif [ -f "${list[i]}/suffix.json" ]; then
+        sed -i '$ s/,$/\n      ]/g' ${list[i]}/suffix.json
+    elif [ -f "${list[i]}/domain.json" ]; then
+        sed -i '$ s/,$/\n      ]/g' ${list[i]}/domain.json
+    fi
+
     # 合并 json 顺序：domain → suffix → keyword → ipcidr
     if [ -f "${list[i]}.json" ]; then
         rm -f ${list[i]}.json
@@ -66,9 +77,6 @@ for ((i = 0; i < ${#list[@]}; i++)); do
         echo "  ]"
         echo "}"
     } > ${list[i]}.json
-
-    # 🔹 修复 JSON 最后一个数组多余逗号
-    sed -i '$ s/,$//' ${list[i]}.json
 
     rm -r ${list[i]}
     ./sing-box rule-set compile ${list[i]}.json -o ${list[i]}.srs
