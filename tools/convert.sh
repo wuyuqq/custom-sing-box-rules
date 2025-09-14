@@ -8,7 +8,7 @@ wrap_json() {
     sed -i 's/^/        "/' "$file"
     sed -i 's/$/",/' "$file"
     sed -i "1s/^/      \"$key\": [\n/" "$file"
-    sed -i '$ s/,$/\n      ],/' "$file"
+    sed -i '$ s/$/\n      ],/' "$file"
 }
 
 for ((i = 0; i < ${#list[@]}; i++)); do
