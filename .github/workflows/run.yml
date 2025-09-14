@@ -51,21 +51,39 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 3️⃣ 下载 domain lists 并生成规则目录
-      - name: Download domain lists
+      # 3️⃣ 下载 domain lists 并生成 convert.sh 所需规则目录
+      - name: Download domain lists and prepare rules
         run: |
           mkdir -p ./domains/ ./tools/rules/
-          lists=(LocalAreaNetwork private_direct private_proxy Emby GoogleCN GoogleFCM Bing OneDrive Microsoft Apple Telegram OpenAi YouTube ProxyMedia ProxyGFWlist ChinaDomain ChinaCompanyIp Spotify TikTok Speedtest)
-          for l in "${lists[@]}"; do
-            url_var=$(eval echo \$$l)
-            if [ "$l" == "ChinaCompanyIp" ]; then
-              grep_pattern='^(IP-CIDR|IP-CIDR6)'
-            else
-              grep_pattern='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
-            fi
-            curl -sSL "$url_var" | grep -E "$grep_pattern" > ./domains/$l.list
 
-            # 准备 convert.sh 需要的规则目录
+          # 每个列表对应的 grep pattern
+          declare -A patterns=(
+            [LocalAreaNetwork]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [private_direct]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [private_proxy]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [Emby]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [GoogleCN]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [GoogleFCM]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [Bing]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [OneDrive]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [Microsoft]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [Apple]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [Telegram]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [OpenAi]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [YouTube]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [ProxyMedia]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [ProxyGFWlist]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [ChinaDomain]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [ChinaCompanyIp]='^(IP-CIDR|IP-CIDR6)'
+            [Spotify]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [TikTok]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [Speedtest]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+          )
+
+          for l in "${!patterns[@]}"; do
+            url_var=$(eval echo \$$l)
+            curl -sSL "$url_var" | grep -E "${patterns[$l]}" > ./domains/$l.list
+
             mkdir -p "./tools/rules/$l/"
             cp "./domains/$l.list" "./tools/rules/$l/$l.yaml"
           done
