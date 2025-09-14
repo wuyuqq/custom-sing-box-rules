@@ -1,62 +1,60 @@
 #!/bin/bash
-# 处理 rules 文件夹下的 YAML 文件，生成 JSON 并编译成 sing-box srs
+list=($(ls ./rules/))
 
-set -e
-shopt -s nullglob
-
-format_json() {
-    local file=$1
-    local key=$2
+# 将文本文件包装成 JSON 数组
+wrap_json() {
+    local file=$1 key=$2
     [ -f "$file" ] || return
-    sed -i 's/^/        "/; s/$/",/' "$file"
+    sed -i 's/^/        "/' "$file"
+    sed -i 's/$/",/' "$file"
     sed -i "1s/^/      \"$key\": [\n/" "$file"
-    sed -i '$ s/,$/\n      ],/' "$file"
+    sed -i '$ s/,$/\n      ],/g' "$file"
 }
 
-merge_json() {
-    local filename=$1
-    local out="$filename.json"
-    [ -f "$out" ] && rm -f "$out"
+for ((i = 0; i < ${#list[@]}; i++)); do
+    mkdir -p "${list[i]}"
+    yaml="./rules/${list[i]}/${list[i]}.yaml"
+
+    # 定义规则类型与对应前缀
+    declare -A rules=(
+        ["domain"]="DOMAIN,"
+        ["suffix"]="DOMAIN-SUFFIX,"
+        ["keyword"]="DOMAIN-KEYWORD,"
+        ["ipcidr"]="IP-CIDR"
+    )
+
+    # 归类并生成临时 JSON
+    for key 在 "${!rules[@]}"; do
+        prefix=${rules[$key]}
+        file="${list[i]}/$key.json"
+        if grep -q "^$prefix" "$yaml"; then
+            if [ "$key" == "ipcidr" ]; then
+                grep '^IP-CIDR' "$yaml" | sed -e 's/^IP-CIDR,//' -e 's/^IP-CIDR6,//' -e 's/,no-resolve//' > "$file"
+            else
+                grep "^$prefix" "$yaml" | sed "s/^$prefix//" > "$file"
+            fi
+            wrap_json "$file" "$key"
+        fi
+    done
+
+    # 合并 JSON
+    json_file="${list[i]}.json"
+    [ -f "$json_file" ] && rm -f "$json_file"
     {
         echo "{"
         echo "  \"version\": 2,"
         echo "  \"rules\": ["
         echo "    {"
-        [ -f "$filename/domain.json" ] && cat "$filename/domain.json"
-        [ -f "$filename/suffix.json" ] && cat "$filename/suffix.json"
-        [ -f "$filename/keyword.json" ] && cat "$filename/keyword.json"
-        [ -f "$filename/ipcidr.json" ] && cat "$filename/ipcidr.json"
+        [ -f "${list[i]}/domain.json" ] && cat "${list[i]}/domain.json"
+        [ -f "${list[i]}/suffix.json" ] && cat "${list[i]}/suffix.json"
+        [ -f "${list[i]}/keyword.json" ] && cat "${list[i]}/keyword.json"
+        [ -f "${list[i]}/ipcidr.json" ] && cat "${list[i]}/ipcidr.json"
         echo "    }"
         echo "  ]"
         echo "}"
-    } > "$out"
-}
+    } > "$json_file"
 
-# 遍历 rules 文件夹
-for yaml_dir 在 ./rules/*/; do
-    [ -d "$yaml_dir" ] || continue
-    filename=$(basename "$yaml_dir")
-    yaml_file="$yaml_dir/$filename.yaml"
-    mkdir -p "$filename"
-
-    # 生成临时 JSON 文件
-    grep 'DOMAIN-SUFFIX,' "$yaml_file" | sed 's/^DOMAIN-SUFFIX,//' > "$filename/suffix.json" || true
-    grep 'DOMAIN,' "$yaml_file" | sed 's/^DOMAIN,//' > "$filename/domain.json" || true
-    grep 'DOMAIN-KEYWORD,' "$yaml_file" | sed 's/^DOMAIN-KEYWORD,//' > "$filename/keyword.json" || true
-    grep -E 'IP-CIDR|IP-CIDR6' "$yaml_file" | sed -E 's/^IP-CIDR6?,//; s/,no-resolve//' > "$filename/ipcidr.json" || true
-
-    # 格式化 JSON
-    format_json "$filename/domain.json" "domain"
-    format_json "$filename/suffix.json" "domain_suffix"
-    format_json "$filename/keyword.json" "domain_keyword"
-    format_json "$filename/ipcidr.json" "ip_cidr"
-
-    # 合并 JSON
-    merge_json "$filename"
-
-    # 编译 sing-box srs
-    ./sing-box rule-set compile "$filename.json" -o "$filename.srs"
-
-    # 清理临时文件夹
-    rm -rf "$filename"
+    # 清理临时文件夹并生成 srs
+    rm -r "${list[i]}"
+    ./sing-box rule-set compile "$json_file" -o "${list[i]}.srs"
 done
