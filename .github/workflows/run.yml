@@ -1,4 +1,4 @@
-name: Build domains and ruleset
+name: Build sing-box ruleset
 
 on:
   workflow_dispatch:
@@ -21,8 +21,8 @@ jobs:
 
           declare -A urls=(
             [LocalAreaNetwork]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list
-            [private_cn]=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/private_cn.list
-            [private_!cn]=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/private_!cn.list
+            [private_direct]=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/private_cn.list
+            [private_proxy]=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/private_!cn.list
             [Emby]=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/emby.list
             [GoogleCN]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/GoogleCN.list
             [GoogleFCM]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list
@@ -59,8 +59,8 @@ jobs:
           # 每个列表对应的 grep pattern
           declare -A patterns=(
             [LocalAreaNetwork]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
-            [private_cn]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
-            [private_!cn]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [private_direct]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [private_proxy]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
             [Emby]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
             [GoogleCN]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
             [GoogleFCM]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
