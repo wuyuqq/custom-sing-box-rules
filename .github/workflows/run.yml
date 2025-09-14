@@ -1,0 +1,110 @@
+name: Build domains and ruleset
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 18 * * *"
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "**/README.md"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set variables
+        run: |
+          echo "update_version=$(date -d '+8 hours' +%Y-%m-%d)" >> ${GITHUB_ENV}
+          echo "LocalAreaNetwork=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list" >> $GITHUB_ENV
+          echo "private_direct=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/private_cn.list" >> $GITHUB_ENV
+          echo "private_proxy=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/private_!cn.list" >> $GITHUB_ENV
+          echo "Emby=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/emby.list" >> $GITHUB_ENV
+          echo "GoogleCN=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/GoogleCN.list" >> $GITHUB_ENV
+          echo "GoogleFCM=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list" >> $GITHUB_ENV
+          echo "Bing=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Bing.list" >> $GITHUB_ENV
+          echo "OneDrive=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/OneDrive.list" >> $GITHUB_ENV
+          echo "Microsoft=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Microsoft.list" >> $GITHUB_ENV
+          echo "Apple=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Apple.list" >> $GITHUB_ENV
+          echo "Telegram=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Telegram.list" >> $GITHUB_ENV
+          echo "OpenAi=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/OpenAi.list" >> $GITHUB_ENV
+          echo "YouTube=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/YouTube.list" >> $GITHUB_ENV
+          echo "ProxyMedia=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list" >> $GITHUB_ENV
+          echo "ProxyGFWlist=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list" >> $GITHUB_ENV
+          echo "ChinaDomain=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list" >> $GITHUB_ENV
+          echo "ChinaCompanyIp=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaCompanyIp.list" >> $GITHUB_ENV
+          echo "Spotify=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Spotify.list" >> $GITHUB_ENV
+          echo "TikTok=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/TikTok.list" >> $GITHUB_ENV
+          echo "Speedtest=https://raw.githubusercontent.com/dler-io/Rules/master/Surge/Surge%203/Provider/Speedtest.list" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Checkout repository
+        uses: actions/checkout@master
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+
+      # 下载 domains
+      - name: Download domain lists
+        run: |
+          mkdir -p ./domains/
+          curl -sSL ${LocalAreaNetwork} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/LocalAreaNetwork.list
+          curl -sSL ${private_direct} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/private_direct.list
+          curl -sSL ${private_proxy} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/private_proxy.list
+          curl -sSL ${Emby} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/Emby.list
+          curl -sSL ${GoogleCN} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/GoogleCN.list
+          curl -sSL ${GoogleFCM} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/GoogleFCM.list
+          curl -sSL ${Bing} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/Bing.list
+          curl -sSL ${OneDrive} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/OneDrive.list
+          curl -sSL ${Microsoft} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/Microsoft.list
+          curl -sSL ${Apple} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/Apple.list
+          curl -sSL ${Telegram} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/Telegram.list
+          curl -sSL ${OpenAi} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/OpenAi.list
+          curl -sSL ${YouTube} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/YouTube.list
+          curl -sSL ${ProxyMedia} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/ProxyMedia.list
+          curl -sSL ${ProxyGFWlist} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/ProxyGFWlist.list
+          curl -sSL ${ChinaDomain} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/ChinaDomain.list
+          curl -sSL ${ChinaCompanyIp} | grep -E '^(IP-CIDR|IP-CIDR6)' > ./domains/ChinaCompanyIp.list
+          curl -sSL ${Spotify} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/Spotify.list
+          curl -sSL ${TikTok} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/TikTok.list
+          curl -sSL ${Speedtest} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD)' > ./domains/Speedtest.list
+
+      # 准备 convert.sh 所需目录
+      - name: Prepare rules
+        run: |
+          mkdir -p ./tools/rules/
+          for f in ./domains/*.list; do
+            name=$(basename "$f" .list)
+            mkdir -p "./tools/rules/$name/"
+            cp "$f" "./tools/rules/$name/$name.yaml"
+          done
+
+      # 下载 sing-box 核心
+      - name: Download sing-box core
+        run: |
+          wget "https://github.com/SagerNet/sing-box/releases/download/v1.10.1/sing-box-1.10.1-linux-amd64.tar.gz" -O - | tar -zxf - -C ./tools/
+          mv -f ./tools/sing-box-1.10.1-linux-amd64/sing-box ./tools/
+
+      # 运行 convert.sh
+      - name: Convert rules
+        run: |
+          cd ./tools/
+          chmod +x convert.sh && ./convert.sh
+          rm -rf ./sing-box* LICENSE ./rules*
+          cp -f ./*.json ./*.srs ../sing-box-ruleset/
+
+      # 提交到 sing-box-ruleset 分支
+      - name: Commit and push ruleset
+        run: |
+          cd ./sing-box-ruleset/ || exit 1
+          git init
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git checkout -b sing-box-ruleset
+          git add . && git commit -m "规则集更新于 ${update_version}"
+          git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          git push -f -u origin sing-box-ruleset
+
