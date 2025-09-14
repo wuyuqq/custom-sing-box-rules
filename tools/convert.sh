@@ -1,71 +1,63 @@
 # 处理文件
 list=($(ls ./rules/))
 for ((i = 0; i < ${#list[@]}; i++)); do
-	mkdir -p ${list[i]}
-	# 归类
-	# domain
-	if [ -n "$(cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN-SUFFIX,')" ]; then
-		cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN-SUFFIX,' | sed 's/^DOMAIN-SUFFIX,//g' > ${list[i]}/suffix.json
-	fi
-	if [ -n "$(cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN,')" ]; then
-		cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN,' | sed 's/^DOMAIN,//g' >> ${list[i]}/domain.json
-	fi
-	if [ -n "$(cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN-KEYWORD,')" ]; then
-		cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN-KEYWORD,' | sed 's/^DOMAIN-KEYWORD,//g' > ${list[i]}/keyword.json
-	fi
-	# ipcidr
-	if [ -n "$(cat ./rules/${list[i]}/${list[i]}.yaml | grep 'IP-CIDR')" ]; then
-		cat ./rules/${list[i]}/${list[i]}.yaml | grep 'IP-CIDR' | sed 's/^IP-CIDR,//g' | sed 's/^IP-CIDR6,//g' | sed 's/,no-resolve//g' > ${list[i]}/ipcidr.json
-	fi
-	# 转成json格式
-	# domain
-	if [ -f "${list[i]}/domain.json" ]; then
-		sed -i 's/^/        "/g' ${list[i]}/domain.json
-		sed -i 's/$/",/g' ${list[i]}/domain.json
-		sed -i '1s/^/      "domain": [\n/g' ${list[i]}/domain.json
-		sed -i '$ s/,$/\n      ],/g' ${list[i]}/domain.json
-	fi
-	if [ -f "${list[i]}/suffix.json" ]; then
-		sed -i 's/^/        "/g' ${list[i]}/suffix.json
-		sed -i 's/$/",/g' ${list[i]}/suffix.json
-		sed -i '1s/^/      "domain_suffix": [\n/g' ${list[i]}/suffix.json
-		sed -i '$ s/,$/\n      ],/g' ${list[i]}/suffix.json
-	fi
-	if [ -f "${list[i]}/keyword.json" ]; then
-		sed -i 's/^/        "/g' ${list[i]}/keyword.json
-		sed -i 's/$/",/g' ${list[i]}/keyword.json
-		sed -i '1s/^/      "domain_keyword": [\n/g' ${list[i]}/keyword.json
-		sed -i '$ s/,$/\n      ],/g' ${list[i]}/keyword.json
-	fi
-	# ipcidr
-	if [ -f "${list[i]}/ipcidr.json" ]; then
-		sed -i 's/^/        "/g' ${list[i]}/ipcidr.json
-		sed -i 's/$/",/g' ${list[i]}/ipcidr.json
-		sed -i '1s/^/      "ip_cidr": [\n/g' ${list[i]}/ipcidr.json
-		sed -i '$ s/,$/\n      ],/g' ${list[i]}/ipcidr.json
-	fi
+    mkdir -p ${list[i]}
 
-	# 合并顺序：domain → domain_suffix → domain_keyword → ip_cidr（ip_cidr 最后）
-	if [ -f "${list[i]}.json" ]; then
-		rm -f ${list[i]}.json
-	fi
-	{
-		echo "{"
-		echo "  \"version\": 1,"
-		echo "  \"rules\": ["
-		echo "    {"
-		[ -f "${list[i]}/domain.json" ] && cat ${list[i]}/domain.json
-		[ -f "${list[i]}/suffix.json" ] && cat ${list[i]}/suffix.json
-		[ -f "${list[i]}/keyword.json" ] && cat ${list[i]}/keyword.json
-		[ -f "${list[i]}/ipcidr.json" ] && cat ${list[i]}/ipcidr.json
-		echo "    }"
-		echo "  ]"
-		echo "}"
-	} > ${list[i]}.json
+    # 归类
+    yaml="./rules/${list[i]}/${list[i]}.yaml"
 
-	# 去掉最后一个数组的多余逗号
-	sed -i ':a;N;$!ba;s/,\n[[:space:]]*]/\n]/g' ${list[i]}.json
+    # domain
+    if [ -n "$(grep 'DOMAIN,' "$yaml")" ]; 键，然后
+        grep 'DOMAIN,' "$yaml" | sed 's/^DOMAIN,//' > ${list[i]}/domain.json
+    fi
+    if [ -n "$(grep 'DOMAIN-SUFFIX,' "$yaml")" ]; 键，然后
+        grep 'DOMAIN-SUFFIX,' "$yaml" | sed 's/^DOMAIN-SUFFIX,//' > ${list[i]}/suffix.json
+    fi
+    if [ -n "$(grep 'DOMAIN-KEYWORD,' "$yaml")" ]; then
+        grep 'DOMAIN-KEYWORD,' "$yaml" | sed 's/^DOMAIN-KEYWORD,//' > ${list[i]}/keyword.json
+    fi
+    # ipcidr
+    if [ -n "$(grep 'IP-CIDR' "$yaml")" ]; then
+        grep 'IP-CIDR' "$yaml" \
+            | sed -e 's/^IP-CIDR,//' -e 's/^IP-CIDR6,//' -e 's/,no-resolve//' > ${list[i]}/ipcidr.json
+    fi
 
-	rm -r ${list[i]}
-	./sing-box rule-set compile ${list[i]}.json -o ${list[i]}.srs
+    # 转成 JSON
+    wrap() {
+        [ -f "$1" ] || return
+        sed -i 's/^/        "/' "$1"
+        sed -i 's/$/",/' "$1"
+        sed -i "1s/^/      \"$2\": [\n/" "$1"
+        sed -i '$ s/,$/\n      ],/g' "$1"
+    }
+
+    wrap "${list[i]}/domain.json" "domain"
+    wrap "${list[i]}/suffix.json" "domain_suffix"
+    wrap "${list[i]}/keyword.json" "domain_keyword"
+    wrap "${list[i]}/ipcidr.json" "ip_cidr"
+
+    # 合并 JSON 顺序：domain → suffix → keyword → ip_cidr（ip_cidr 最后）
+    json_file="${list[i]}.json"
+    [ -f "$json_file" ] && rm -f "$json_file"
+
+    {
+        echo "{"
+        echo "  \"version\": 1,"
+        echo "  \"rules\": ["
+        echo "    {"
+        [ -f "${list[i]}/domain.json" ] && cat "${list[i]}/domain.json"
+        [ -f "${list[i]}/suffix.json" ] && cat "${list[i]}/suffix.json"
+        [ -f "${list[i]}/keyword.json" ] && cat "${list[i]}/keyword.json"
+        [ -f "${list[i]}/ipcidr.json" ] && cat "${list[i]}/ipcidr.json"
+        echo "    }"
+        echo "  ]"
+        echo "}"
+    } > "$json_file"
+
+    # 删除最后一个数组的多余逗号
+    sed -i -E ':a;N;$!ba;s/,\n([[:space:]]*")/\n\1/g' "$json_file"
+
+    # 清理临时文件夹并生成 srs
+    rm -r "${list[i]}"
+    ./sing-box rule-set compile "$json_file" -o "${list[i]}.srs"
 done
