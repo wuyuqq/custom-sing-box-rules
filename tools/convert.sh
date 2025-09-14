@@ -63,6 +63,9 @@ for ((i = 0; i < ${#list[@]}; i++)); do
 		echo "}"
 	} > ${list[i]}.json
 
+	# 去掉最后一个数组的多余逗号
+	sed -i ':a;N;$!ba;s/,\n[[:space:]]*]/\n]/g' ${list[i]}.json
+
 	rm -r ${list[i]}
 	./sing-box rule-set compile ${list[i]}.json -o ${list[i]}.srs
 done
