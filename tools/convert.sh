@@ -14,7 +14,7 @@ for ((i = 0; i < ${#list[@]}; i++)); do
         grep 'DOMAIN-KEYWORD,' ./rules/${list[i]}/${list[i]}.yaml | sed 's/^DOMAIN-KEYWORD,//g' > ${list[i]}/keyword.json
     fi
     # ipcidr
-    if [ -n "$(grep 'IP-CIDR' ./rules/${list[i]}/${list[i]}.yaml)" ]; 键，然后
+    if [ -n "$(grep 'IP-CIDR' ./rules/${list[i]}/${list[i]}.yaml)" ]; then
         grep 'IP-CIDR' ./rules/${list[i]}/${list[i]}.yaml \
             | sed 's/^IP-CIDR,//g' \
             | sed 's/^IP-CIDR6,//g' \
@@ -23,13 +23,13 @@ for ((i = 0; i < ${#list[@]}; i++)); do
 
     # 转成json格式
     # domain
-    if [ -f "${list[i]}/domain.json" ]; 键，然后
+    if [ -f "${list[i]}/domain.json" ]; then
         sed -i 's/^/        "/g' ${list[i]}/domain.json
         sed -i 's/$/",/g' ${list[i]}/domain.json
         sed -i '1s/^/      "domain": [\n/g' ${list[i]}/domain.json
         sed -i '$ s/,$/\n      ],/g' ${list[i]}/domain.json
     fi
-    if [ -f "${list[i]}/suffix.json" ]; 键，然后
+    if [ -f "${list[i]}/suffix.json" ]; then
         sed -i 's/^/        "/g' ${list[i]}/suffix.json
         sed -i 's/$/",/g' ${list[i]}/suffix.json
         sed -i '1s/^/      "domain_suffix": [\n/g' ${list[i]}/suffix.json
@@ -55,7 +55,7 @@ for ((i = 0; i < ${#list[@]}; i++)); do
     fi
     {
         echo "{"
-        echo "  \"version\": 3,"
+        echo "  \"version\": 2,"
         echo "  \"rules\": ["
         echo "    {"
         [ -f "${list[i]}/domain.json" ] && cat ${list[i]}/domain.json
