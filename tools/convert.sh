@@ -2,15 +2,15 @@
 set -e
 
 # 遍历 rules 目录
-for rule 在 ./rules/*; do
+for rule in ./rules/*; do
     name=$(basename "$rule")
     mkdir -p "$name"
 
     # 提取各类规则
-    awk -F， '/^DOMAIN-SUFFIX,/ {print $2}' "$rule/$name.yaml" > "$name/suffix.json"
-    awk -F， '/^DOMAIN,/ {print $2}' "$rule/$name.yaml" > "$name/domain.json"
+    awk -F, '/^DOMAIN-SUFFIX,/ {print $2}' "$rule/$name.yaml" > "$name/suffix.json"
+    awk -F, '/^DOMAIN,/ {print $2}' "$rule/$name.yaml" > "$name/domain.json"
     awk -F, '/^DOMAIN-KEYWORD,/ {print $2}' "$rule/$name.yaml" > "$name/keyword.json"
-    awk -F， '/^IP-CIDR/ {gsub(/,no-resolve/,""); gsub(/^IP-CIDR6?/,""); print $2}' "$rule/$name.yaml" > "$name/ipcidr.json"
+    awk -F, '/^IP-CIDR/ {gsub(/,no-resolve/,""); gsub(/^IP-CIDR6?/,""); print $2}' "$rule/$name.yaml" > "$name/ipcidr.json"
 
     # JSON 封装函数
     json_wrap() {
