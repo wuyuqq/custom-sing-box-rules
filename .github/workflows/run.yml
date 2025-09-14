@@ -14,86 +14,74 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # 1️⃣ 设置变量
       - name: Set variables
         run: |
-          echo "update_version=$(date -d '+8 hours' +%Y-%m-%d)" >> ${GITHUB_ENV}
-          echo "LocalAreaNetwork=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list" >> $GITHUB_ENV
-          echo "private_direct=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/private_cn.list" >> $GITHUB_ENV
-          echo "private_proxy=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/private_!cn.list" >> $GITHUB_ENV
-          echo "Emby=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/emby.list" >> $GITHUB_ENV
-          echo "GoogleCN=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/GoogleCN.list" >> $GITHUB_ENV
-          echo "GoogleFCM=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list" >> $GITHUB_ENV
-          echo "Bing=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Bing.list" >> $GITHUB_ENV
-          echo "OneDrive=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/OneDrive.list" >> $GITHUB_ENV
-          echo "Microsoft=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Microsoft.list" >> $GITHUB_ENV
-          echo "Apple=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Apple.list" >> $GITHUB_ENV
-          echo "Telegram=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Telegram.list" >> $GITHUB_ENV
-          echo "OpenAi=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/OpenAi.list" >> $GITHUB_ENV
-          echo "YouTube=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/YouTube.list" >> $GITHUB_ENV
-          echo "ProxyMedia=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list" >> $GITHUB_ENV
-          echo "ProxyGFWlist=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list" >> $GITHUB_ENV
-          echo "ChinaDomain=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list" >> $GITHUB_ENV
-          echo "ChinaCompanyIp=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaCompanyIp.list" >> $GITHUB_ENV
-          echo "Spotify=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Spotify.list" >> $GITHUB_ENV
-          echo "TikTok=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/TikTok.list" >> $GITHUB_ENV
-          echo "Speedtest=https://raw.githubusercontent.com/dler-io/Rules/master/Surge/Surge%203/Provider/Speedtest.list" >> $GITHUB_ENV
+          echo "update_version=$(date -d '+8 hours' +%Y-%m-%d)" >> $GITHUB_ENV
+
+          declare -A urls=(
+            [LocalAreaNetwork]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list
+            [private_direct]=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/private_cn.list
+            [private_proxy]=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/private_!cn.list
+            [Emby]=https://raw.githubusercontent.com/wuyuqq/247cp/master/sing-box/ruleset/emby.list
+            [GoogleCN]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/GoogleCN.list
+            [GoogleFCM]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list
+            [Bing]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Bing.list
+            [OneDrive]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/OneDrive.list
+            [Microsoft]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Microsoft.list
+            [Apple]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Apple.list
+            [Telegram]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Telegram.list
+            [OpenAi]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/OpenAi.list
+            [YouTube]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/YouTube.list
+            [ProxyMedia]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list
+            [ProxyGFWlist]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list
+            [ChinaDomain]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list
+            [ChinaCompanyIp]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaCompanyIp.list
+            [Spotify]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Spotify.list
+            [TikTok]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/TikTok.list
+            [Speedtest]=https://raw.githubusercontent.com/dler-io/Rules/master/Surge/Surge%203/Provider/Speedtest.list
+          )
+
+          for k in "${!urls[@]}"; do
+            echo "$k=${urls[$k]}" >> $GITHUB_ENV
+          done
         shell: bash
 
+      # 2️⃣ 检出仓库
       - name: Checkout repository
-        uses: actions/checkout@master
+        uses: actions/checkout@v3
 
-      # 下载 domains
+      # 3️⃣ 下载 domain lists 并生成规则目录
       - name: Download domain lists
         run: |
-          mkdir -p ./domains/
-          curl -sSL ${LocalAreaNetwork} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/LocalAreaNetwork.list
-          curl -sSL ${private_direct} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/private_direct.list
-          curl -sSL ${private_proxy} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/private_proxy.list
-          curl -sSL ${Emby} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/Emby.list
-          curl -sSL ${GoogleCN} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/GoogleCN.list
-          curl -sSL ${GoogleFCM} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/GoogleFCM.list
-          curl -sSL ${Bing} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/Bing.list
-          curl -sSL ${OneDrive} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/OneDrive.list
-          curl -sSL ${Microsoft} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/Microsoft.list
-          curl -sSL ${Apple} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/Apple.list
-          curl -sSL ${Telegram} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/Telegram.list
-          curl -sSL ${OpenAi} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/OpenAi.list
-          curl -sSL ${YouTube} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/YouTube.list
-          curl -sSL ${ProxyMedia} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/ProxyMedia.list
-          curl -sSL ${ProxyGFWlist} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/ProxyGFWlist.list
-          curl -sSL ${ChinaDomain} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/ChinaDomain.list
-          curl -sSL ${ChinaCompanyIp} | grep -E '^(IP-CIDR|IP-CIDR6)' > ./domains/ChinaCompanyIp.list
-          curl -sSL ${Spotify} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/Spotify.list
-          curl -sSL ${TikTok} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/TikTok.list
-          curl -sSL ${Speedtest} | grep -E '^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)' > ./domains/Speedtest.list
+          mkdir -p ./domains/ ./tools/rules/
+          lists=(LocalAreaNetwork private_direct private_proxy Emby GoogleCN GoogleFCM Bing OneDrive Microsoft Apple Telegram OpenAi YouTube ProxyMedia ProxyGFWlist ChinaDomain ChinaCompanyIp Spotify TikTok Speedtest)
+          for l in "${lists[@]}"; do
+            url_var=$(eval echo \$$l)
+            if [ "$l" == "ChinaCompanyIp" ]; then
+              grep_pattern='^(IP-CIDR|IP-CIDR6)'
+            else
+              grep_pattern='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            fi
+            curl -sSL "$url_var" | grep -E "$grep_pattern" > ./domains/$l.list
 
-      # 准备 convert.sh 所需目录
-      - name: Prepare rules
-        run: |
-          mkdir -p ./tools/rules/
-          for f in ./domains/*.list; do
-            name=$(basename "$f" .list)
-            mkdir -p "./tools/rules/$name/"
-            cp "$f" "./tools/rules/$name/$name.yaml"
+            # 准备 convert.sh 需要的规则目录
+            mkdir -p "./tools/rules/$l/"
+            cp "./domains/$l.list" "./tools/rules/$l/$l.yaml"
           done
 
-      # 下载 sing-box 核心
-      - name: Download sing-box core
+      # 4️⃣ 下载 sing-box 核心并运行 convert.sh
+      - name: Setup sing-box and convert rules
         run: |
           mkdir -p ./tools/
-          wget "https://github.com/SagerNet/sing-box/releases/download/v1.10.1/sing-box-1.10.1-linux-amd64.tar.gz" -O - | tar -zxf - -C ./tools/
+          wget -qO- https://github.com/SagerNet/sing-box/releases/download/v1.10.1/sing-box-1.10.1-linux-amd64.tar.gz | tar -zxf - -C ./tools/
           mv -f ./tools/sing-box-1.10.1-linux-amd64/sing-box ./tools/
-
-      # 运行 convert.sh
-      - name: Convert rules
-        run: |
           cd ./tools/
           chmod +x convert.sh && ./convert.sh
-          rm -rf ./sing-box* LICENSE ./rules*
           mkdir -p ../sing-box-ruleset/
           cp -f ./*.json ./*.srs ../sing-box-ruleset/
 
-      # 提交到 sing-box-ruleset 分支
+      # 5️⃣ 提交到 sing-box-ruleset 分支
       - name: Commit and push ruleset
         run: |
           cd ./sing-box-ruleset/ || exit 1
