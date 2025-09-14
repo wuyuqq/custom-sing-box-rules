@@ -49,7 +49,7 @@ jobs:
 
       # 2️⃣ 检出仓库
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       # 3️⃣ 下载 domain lists 并生成 convert.sh 所需规则目录
       - name: Download domain lists and prepare rules
