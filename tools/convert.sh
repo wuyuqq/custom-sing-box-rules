@@ -1,53 +1,52 @@
 #!/bin/bash
-set -e
+list=($(ls ./rules/))
 
-for rule in ./rules/*; do
-    name=$(basename "$rule")
-    mkdir -p "$name"
+wrap_json() {
+    # $1 = 文件路径, $2 = JSON key
+    local file=$1 key=$2
+    [ -f "$file" ] || return
+    sed -i 's/^/        "/' "$file"
+    sed -i 's/$/",/' "$file"
+    sed -i "1s/^/      \"$key\": [\n/" "$file"
+    sed -i '$ s/,$/\n      ],/' "$file"
+}
 
-    # 归类
-    if grep -q '^DOMAIN-SUFFIX,' "$rule/$name.yaml"; then
-        grep '^DOMAIN-SUFFIX,' "$rule/$name.yaml" | sed 's/^DOMAIN-SUFFIX,//' > "$name/suffix.json"
-    fi
-    if grep -q '^DOMAIN,' "$rule/$name.yaml"; then
-        grep '^DOMAIN,' "$rule/$name.yaml" | sed 's/^DOMAIN,//' > "$name/domain.json"
-    fi
-    if grep -q '^DOMAIN-KEYWORD,' "$rule/$name.yaml"; then
-        grep '^DOMAIN-KEYWORD,' "$rule/$name.yaml" | sed 's/^DOMAIN-KEYWORD,//' > "$name/keyword.json"
-    fi
-    if grep -q '^IP-CIDR' "$rule/$name.yaml"; then
-        grep '^IP-CIDR' "$rule/$name.yaml" | sed 's/^IP-CIDR6\?\,//' | sed 's/,no-resolve//' > "$name/ipcidr.json"
-    fi
+for ((i = 0; i < ${#list[@]}; i++)); do
+    mkdir -p "${list[i]}"
 
-    # 转成 json
-    wrap_json() {
-        local f=$1 key=$2
-        [ -f "$f" ] || return
-        sed -i 's/^/        "/' "$f"
-        sed -i 's/$/",/' "$f"
-        sed -i "1s/^/      \"$key\": [\n/" "$f"
-        sed -i '$ s/,$/\n      ],/' "$f"
-    }
+    yaml="./rules/${list[i]}/${list[i]}.yaml"
 
-    wrap_json "$name/domain.json" "domain"
-    wrap_json "$name/suffix.json" "domain_suffix"
-    wrap_json "$name/keyword.json" "domain_keyword"
-    wrap_json "$name/ipcidr.json" "ip_cidr"
+    # domain 归类
+    grep '^DOMAIN-SUFFIX,' "$yaml" | sed 's/^DOMAIN-SUFFIX,//' > "${list[i]}/suffix.json" || true
+    grep '^DOMAIN,' "$yaml" | sed 's/^DOMAIN,//' > "${list[i]}/domain.json" || true
+    grep '^DOMAIN-KEYWORD,' "$yaml" | sed 's/^DOMAIN-KEYWORD,//' > "${list[i]}/keyword.json" || true
+    grep '^IP-CIDR' "$yaml" | sed -e 's/^IP-CIDR,//' -e 's/^IP-CIDR6,//' -e 's/,no-resolve//' > "${list[i]}/ipcidr.json" || true
+
+    # 转成 JSON
+    wrap_json "${list[i]}/domain.json" "domain"
+    wrap_json "${list[i]}/suffix.json" "domain_suffix"
+    wrap_json "${list[i]}/keyword.json" "domain_keyword"
+    wrap_json "${list[i]}/ipcidr.json" "ip_cidr"
+
+    # 合并 JSON
+    json_file="${list[i]}.json"
+    [ -f "$json_file" ] && rm -f "$json_file"
 
     {
         echo "{"
         echo "  \"version\": 2,"
         echo "  \"rules\": ["
         echo "    {"
-        [ -f "$name/domain.json" ] && cat "$name/domain.json"
-        [ -f "$name/suffix.json" ] && cat "$name/suffix.json"
-        [ -f "$name/keyword.json" ] && cat "$name/keyword.json"
-        [ -f "$name/ipcidr.json" ] && cat "$name/ipcidr.json"
+        [ -f "${list[i]}/domain.json" ] && cat "${list[i]}/domain.json"
+        [ -f "${list[i]}/suffix.json" ] && cat "${list[i]}/suffix.json"
+        [ -f "${list[i]}/keyword.json" ] && cat "${list[i]}/keyword.json"
+        [ -f "${list[i]}/ipcidr.json" ] && cat "${list[i]}/ipcidr.json"
         echo "    }"
         echo "  ]"
         echo "}"
-    } > "$name.json"
+    } > "$json_file"
 
-    rm -r "$name"
-    ./sing-box rule-set compile "$name.json" -o "$name.srs"
+    # 清理临时文件夹并生成 srs
+    rm -r "${list[i]}"
+    ./sing-box rule-set compile "$json_file" -o "${list[i]}.srs"
 done
