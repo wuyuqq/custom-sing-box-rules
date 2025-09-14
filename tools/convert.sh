@@ -1,31 +1,38 @@
 #!/bin/bash
 set -e
 
-json_wrap() {
-    local file=$1
-    local key=$2
-    [ -f "$file" ] || return
-    sed -i 's/^/        "/' "$file"
-    sed -i 's/$/",/' "$file"
-    sed -i "1s/^/      \"$key\": [\n/" "$file"
-    sed -i '$ s/,$/\n      ],/' "$file"
-}
-
-for rule 在 ./rules/*; do
+for rule in ./rules/*; do
     name=$(basename "$rule")
     mkdir -p "$name"
 
     # 归类
-    awk -F, '/^DOMAIN-SUFFIX,/ {print $2}' "$rule/$name.yaml" > "$name/suffix.json"
-    awk -F, '/^DOMAIN,/ {print $2}' "$rule/$name.yaml" > "$name/domain.json"
-    awk -F, '/^DOMAIN-KEYWORD,/ {print $2}' "$rule/$name.yaml" > "$name/keyword.json"
-    awk -F, '/^IP-CIDR/ {gsub(/,no-resolve/,""); gsub(/^IP-CIDR6?/,""); print $2}' "$rule/$name.yaml" > "$name/ipcidr.json"
+    if grep -q '^DOMAIN-SUFFIX,' "$rule/$name.yaml"; then
+        grep '^DOMAIN-SUFFIX,' "$rule/$name.yaml" | sed 's/^DOMAIN-SUFFIX,//' > "$name/suffix.json"
+    fi
+    if grep -q '^DOMAIN,' "$rule/$name.yaml"; then
+        grep '^DOMAIN,' "$rule/$name.yaml" | sed 's/^DOMAIN,//' > "$name/domain.json"
+    fi
+    if grep -q '^DOMAIN-KEYWORD,' "$rule/$name.yaml"; then
+        grep '^DOMAIN-KEYWORD,' "$rule/$name.yaml" | sed 's/^DOMAIN-KEYWORD,//' > "$name/keyword.json"
+    fi
+    if grep -q '^IP-CIDR' "$rule/$name.yaml"; then
+        grep '^IP-CIDR' "$rule/$name.yaml" | sed 's/^IP-CIDR6\?\,//' | sed 's/,no-resolve//' > "$name/ipcidr.json"
+    fi
 
     # 转成 json
-    json_wrap "$name/domain.json" "domain"
-    json_wrap "$name/suffix.json" "domain_suffix"
-    json_wrap "$name/keyword.json" "domain_keyword"
-    json_wrap "$name/ipcidr.json" "ip_cidr"
+    wrap_json() {
+        local f=$1 key=$2
+        [ -f "$f" ] || return
+        sed -i 's/^/        "/' "$f"
+        sed -i 's/$/",/' "$f"
+        sed -i "1s/^/      \"$key\": [\n/" "$f"
+        sed -i '$ s/,$/\n      ],/' "$f"
+    }
+
+    wrap_json "$name/domain.json" "domain"
+    wrap_json "$name/suffix.json" "domain_suffix"
+    wrap_json "$name/keyword.json" "domain_keyword"
+    wrap_json "$name/ipcidr.json" "ip_cidr"
 
     {
         echo "{"
