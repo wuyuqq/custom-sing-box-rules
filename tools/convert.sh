@@ -67,6 +67,9 @@ for ((i = 0; i < ${#list[@]}; i++)); do
         echo "}"
     } > ${list[i]}.json
 
+    # 🔹 修复 JSON 最后一个数组多余逗号
+    sed -i '$ s/,$//' ${list[i]}.json
+
     rm -r ${list[i]}
     ./sing-box rule-set compile ${list[i]}.json -o ${list[i]}.srs
 done
