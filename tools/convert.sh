@@ -55,7 +55,7 @@ for ((i = 0; i < ${#list[@]}; i++)); do
     fi
     {
         echo "{"
-        echo "  \"version\": 1,"
+        echo "  \"version\": 2,"
         echo "  \"rules\": ["
         echo "    {"
         [ -f "${list[i]}/domain.json" ] && cat ${list[i]}/domain.json
