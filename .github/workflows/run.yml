@@ -42,11 +42,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@master
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: ./go.mod
-
       # 下载 domains
       - name: Download domain lists
         run: |
@@ -107,4 +102,3 @@ jobs:
           git add . && git commit -m "规则集更新于 ${update_version}"
           git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
           git push -f -u origin sing-box-ruleset
-
