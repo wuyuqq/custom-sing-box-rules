@@ -45,17 +45,24 @@ for ((i = 0; i < ${#list[@]}; i++)); do
 		sed -i '$ s/,$/\n      ],/g' ${list[i]}/ipcidr.json
 	fi
 
-	if [ "$(ls ${list[i]})" = "" ]; then
-		sed -i '1s/^/{\n  "version": 1,\n  "rules": [\n    {\n/g' ${list[i]}.json
-	elif [ -f "${list[i]}.json" ]; then
-		sed -i '1s/^/{\n  "version": 1,\n  "rules": [\n    {\n/g' ${list[i]}.json
-		sed -i '$ s/,$/\n    },\n    {/g' ${list[i]}.json
-		cat ${list[i]}/* >> ${list[i]}.json
-	else
-		cat ${list[i]}/* >> ${list[i]}.json
-		sed -i '1s/^/{\n  "version": 1,\n  "rules": [\n    {\n/g' ${list[i]}.json
+	# 合并顺序：domain → domain_suffix → domain_keyword → ip_cidr（ip_cidr 最后）
+	if [ -f "${list[i]}.json" ]; then
+		rm -f ${list[i]}.json
 	fi
-	sed -i '$ s/,$/\n    }\n  ]\n}/g' ${list[i]}.json
+	{
+		echo "{"
+		echo "  \"version\": 1,"
+		echo "  \"rules\": ["
+		echo "    {"
+		[ -f "${list[i]}/domain.json" ] && cat ${list[i]}/domain.json
+		[ -f "${list[i]}/suffix.json" ] && cat ${list[i]}/suffix.json
+		[ -f "${list[i]}/keyword.json" ] && cat ${list[i]}/keyword.json
+		[ -f "${list[i]}/ipcidr.json" ] && cat ${list[i]}/ipcidr.json
+		echo "    }"
+		echo "  ]"
+		echo "}"
+	} > ${list[i]}.json
+
 	rm -r ${list[i]}
 	./sing-box rule-set compile ${list[i]}.json -o ${list[i]}.srs
 done
