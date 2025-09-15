@@ -48,9 +48,9 @@ for ((i = 0; i < ${#list[@]}; i++)); do
 
 	# 合并顺序：domain → suffix → keyword → ipcidr
 	if [ "$(ls ${list[i]})" = "" ]; then
-		sed -i '1s/^/{\n  "version": 1,\n  "rules": [\n    {\n/g' ${list[i]}.json
+		sed -i '1s/^/{\n  "version": 2,\n  "rules": [\n    {\n/g' ${list[i]}.json
 	elif [ -f "${list[i]}.json" ]; then
-		sed -i '1s/^/{\n  "version": 1,\n  "rules": [\n    {\n/g' ${list[i]}.json
+		sed -i '1s/^/{\n  "version": 2,\n  "rules": [\n    {\n/g' ${list[i]}.json
 		sed -i '$ s/,$/\n    },\n    {/g' ${list[i]}.json
 		[ -f "${list[i]}/domain.json" ] && cat ${list[i]}/domain.json >> ${list[i]}.json
 		[ -f "${list[i]}/suffix.json" ] && cat ${list[i]}/suffix.json >> ${list[i]}.json
@@ -61,7 +61,7 @@ for ((i = 0; i < ${#list[@]}; i++)); do
 		[ -f "${list[i]}/suffix.json" ] && cat ${list[i]}/suffix.json >> ${list[i]}.json
 		[ -f "${list[i]}/keyword.json" ] && cat ${list[i]}/keyword.json >> ${list[i]}.json
 		[ -f "${list[i]}/ipcidr.json" ] && cat ${list[i]}/ipcidr.json >> ${list[i]}.json
-		sed -i '1s/^/{\n  "version": 1,\n  "rules": [\n    {\n/g' ${list[i]}.json
+		sed -i '1s/^/{\n  "version": 2,\n  "rules": [\n    {\n/g' ${list[i]}.json
 	fi
 
 	# 结尾修复
