@@ -1,6 +1,6 @@
 #!/bin/bash
 # 处理文件
-for dir 在 ./rules/*; do
+for dir in ./rules/*; do
     [ -d "$dir" ] || continue
     name=$(basename "$dir")
     mkdir -p "$name"
