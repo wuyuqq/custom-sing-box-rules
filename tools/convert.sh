@@ -14,32 +14,28 @@ for dir in ./rules/*; do
     # json key 映射
     declare -A json_keys=( [domain]="domain" [suffix]="domain_suffix" [keyword]="domain_keyword" [ipcidr]="ip_cidr" )
 
-    # 处理文件内容并加上 JSON 键
-    for k in domain suffix keyword ipcidr; do
-        file="$name/$k.json"
-        if [ -s "$file" ]; then
-            sed -i 's/^/        "/;s/$/",/' "$file"
-            sed -i "1s/^/      \"${json_keys[$k]}\": [\n/" "$file"
-            sed -i '$ s/,$/\n      ],/' "$file"
-        else
-            rm -f "$file"
-        fi
-    done
-
     # 合并 JSON 文件
-    cat > "$name.json" <<EOF
-{
-  "version": 2,
-  "rules": [
     {
-EOF
+        echo "{"
+        echo "  \"version\": 2,"
+        echo "  \"rules\": ["
+        echo "    {"
 
-    for k in domain suffix keyword ipcidr; do
-        [ -f "$name/$k.json" ] && cat "$name/$k.json" >> "$name.json"
-    done
+        for k in domain suffix keyword ipcidr; do
+            file="$name/$k.json"
+            if [ -s "$file" ]; then
+                echo "      \"${json_keys[$k]}\": ["
+                sed 's/^/        "/;s/$/",/' "$file" | sed '$ s/,$//'
+                echo "      ],"
+            fi
+        done
 
-    # 结尾修复
-    sed -i '$ s/,$/\n    }\n  ]\n}/' "$name.json"
+        # 删除最后多余逗号
+        sed '$ s/,$//' <<< "" # 这里不需要再操作文件，后续 echo 直接闭合
+        echo "    }"
+        echo "  ]"
+        echo "}"
+    } > "$name.json"
 
     # 清理临时文件
     rm -r "$name"
