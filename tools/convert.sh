@@ -1,70 +1,58 @@
 # 处理文件
 list=($(ls ./rules/))
+
 for ((i = 0; i < ${#list[@]}; i++)); do
 	mkdir -p ${list[i]}
-	# 归类
-	# domain
-	if [ -n "$(cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN-SUFFIX,')" ]; then
-		cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN-SUFFIX,' | sed 's/^DOMAIN-SUFFIX,//g' > ${list[i]}/suffix.json
-	fi
-	if [ -n "$(cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN,')" ]; then
-		cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN,' | sed 's/^DOMAIN,//g' >> ${list[i]}/domain.json
-	fi
-	if [ -n "$(cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN-KEYWORD,')" ]; then
-		cat ./rules/${list[i]}/${list[i]}.yaml | grep 'DOMAIN-KEYWORD,' | sed 's/^DOMAIN-KEYWORD,//g' > ${list[i]}/keyword.json
-	fi
-	# ipcidr
-	if [ -n "$(cat ./rules/${list[i]}/${list[i]}.yaml | grep 'IP-CIDR')" ]; then
-		cat ./rules/${list[i]}/${list[i]}.yaml | grep 'IP-CIDR' | sed 's/^IP-CIDR,//g' | sed 's/^IP-CIDR6,//g' | sed 's/,no-resolve//g' > ${list[i]}/ipcidr.json
-	fi
 
-	# 转成json格式
-	# domain
-	if [ -f "${list[i]}/domain.json" ]; then
-		sed -i 's/^/        "/g' ${list[i]}/domain.json
-		sed -i 's/$/",/g' ${list[i]}/domain.json
-		sed -i '1s/^/      "domain": [\n/g' ${list[i]}/domain.json
-		sed -i '$ s/,$/\n      ],/g' ${list[i]}/domain.json
-	fi
-	if [ -f "${list[i]}/suffix.json" ]; then
-		sed -i 's/^/        "/g' ${list[i]}/suffix.json
-		sed -i 's/$/",/g' ${list[i]}/suffix.json
-		sed -i '1s/^/      "domain_suffix": [\n/g' ${list[i]}/suffix.json
-		sed -i '$ s/,$/\n      ],/g' ${list[i]}/suffix.json
-	fi
-	if [ -f "${list[i]}/keyword.json" ]; then
-		sed -i 's/^/        "/g' ${list[i]}/keyword.json
-		sed -i 's/$/",/g' ${list[i]}/keyword.json
-		sed -i '1s/^/      "domain_keyword": [\n/g' ${list[i]}/keyword.json
-		sed -i '$ s/,$/\n      ],/g' ${list[i]}/keyword.json
-	fi
-	# ipcidr
-	if [ -f "${list[i]}/ipcidr.json" ]; then
-		sed -i 's/^/        "/g' ${list[i]}/ipcidr.json
-		sed -i 's/$/",/g' ${list[i]}/ipcidr.json
-		sed -i '1s/^/      "ip_cidr": [\n/g' ${list[i]}/ipcidr.json
-		sed -i '$ s/,$/\n      ],/g' ${list[i]}/ipcidr.json
-	fi
+	# 规则提取映射：yaml关键字 -> 输出文件名 -> JSON key
+	declare -A rules_map=(
+		["DOMAIN,"]="${list[i]}/domain.json:domain"
+		["DOMAIN-SUFFIX,"]="${list[i]}/suffix.json:domain_suffix"
+		["DOMAIN-KEYWORD,"]="${list[i]}/keyword.json:domain_keyword"
+		["IP-CIDR"]="${list[i]}/ipcidr.json:ip_cidr"
+		["IP-CIDR6"]="${list[i]}/ipcidr.json:ip_cidr"
+	)
 
-	# 合并顺序：domain → suffix → keyword → ipcidr
-	if [ "$(ls ${list[i]})" = "" ]; then
-		sed -i '1s/^/{\n  "version": 2,\n  "rules": [\n    {\n/g' ${list[i]}.json
-	elif [ -f "${list[i]}.json" ]; then
-		sed -i '1s/^/{\n  "version": 2,\n  "rules": [\n    {\n/g' ${list[i]}.json
-		sed -i '$ s/,$/\n    },\n    {/g' ${list[i]}.json
-		[ -f "${list[i]}/domain.json" ] && cat ${list[i]}/domain.json >> ${list[i]}.json
-		[ -f "${list[i]}/suffix.json" ] && cat ${list[i]}/suffix.json >> ${list[i]}.json
-		[ -f "${list[i]}/keyword.json" ] && cat ${list[i]}/keyword.json >> ${list[i]}.json
-		[ -f "${list[i]}/ipcidr.json" ] && cat ${list[i]}/ipcidr.json >> ${list[i]}.json
-	else
-		[ -f "${list[i]}/domain.json" ] && cat ${list[i]}/domain.json >> ${list[i]}.json
-		[ -f "${list[i]}/suffix.json" ] && cat ${list[i]}/suffix.json >> ${list[i]}.json
-		[ -f "${list[i]}/keyword.json" ] && cat ${list[i]}/keyword.json >> ${list[i]}.json
-		[ -f "${list[i]}/ipcidr.json" ] && cat ${list[i]}/ipcidr.json >> ${list[i]}.json
-		sed -i '1s/^/{\n  "version": 2,\n  "rules": [\n    {\n/g' ${list[i]}.json
-	fi
+	# 按需提取规则
+	for key 在 "${!rules_map[@]}"; do
+		file=${rules_map[$key]%:*}
+		if grep -q "$key" ./rules/${list[i]}/${list[i]}.yaml; then
+			grep "$key" ./rules/${list[i]}/${list[i]}.yaml \
+				| sed "s/^$key//g" \
+				| sed 's/,no-resolve//g' \
+				>> "$file"
+		fi
+	done
 
-	# 结尾修复
+	# 转 JSON 数组
+	for key in domain suffix keyword ipcidr; do
+		file="${list[i]}/$key.json"
+		case $key 在
+			domain)   json_key="domain" ;;
+			suffix)   json_key="domain_suffix" ;;
+			keyword)  json_key="domain_keyword" ;;
+			ipcidr)   json_key="ip_cidr" ;;
+		esac
+
+		if [ -f "$file" ]; then
+			sed -i 's/^/        "/g; s/$/",/g' "$file"
+			sed -i "1s/^/      \"${json_key}\": [\n/" "$file"
+			sed -i '$ s/,$/\n      ],/g' "$file"
+		fi
+	done
+
+	# 初始化 JSON 头
+	echo '{' > ${list[i]}.json
+	echo '  "version": 1,' >> ${list[i]}.json
+	echo '  "rules": [' >> ${list[i]}.json
+	echo '    {' >> ${list[i]}.json
+
+	# 合并文件，顺序固定
+	for key 在 domain suffix keyword ipcidr; do
+		[ -f "${list[i]}/$key.json" ] && cat ${list[i]}/$key.json >> ${list[i]}.json
+	done
+
+	# 结尾闭合
 	sed -i '$ s/,$/\n    }\n  ]\n}/g' ${list[i]}.json
 
 	# 清理
