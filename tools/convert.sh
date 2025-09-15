@@ -15,7 +15,7 @@ for dir in ./rules/*; do
     declare -A json_keys=( [domain]="domain" [suffix]="domain_suffix" [keyword]="domain_keyword" [ipcidr]="ip_cidr" )
 
     # 处理文件内容并加上 JSON 键
-    for k 在 domain suffix keyword ipcidr; do
+    for k in domain suffix keyword ipcidr; do
         file="$name/$k.json"
         if [ -s "$file" ]; then
             sed -i 's/^/        "/;s/$/",/' "$file"
