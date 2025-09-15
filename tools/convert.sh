@@ -3,21 +3,25 @@ for dir in ./rules/*; do
     [ -d "$dir" ] || continue
     name=$(basename "$dir")
 
-    # json key 映射
     declare -A json_keys=( [domain]="domain" [suffix]="domain_suffix" [keyword]="domain_keyword" [ipcidr]="ip_cidr" )
 
-    # 归类并生成临时内容
     declare -A tmp_files
     for k in domain suffix keyword ipcidr; do
         case $k in
-            domain) pattern='DOMAIN,'; file_ext='domain.json' ;;
-            suffix) pattern='DOMAIN-SUFFIX,'; file_ext='suffix.json' ;;
-            keyword) pattern='DOMAIN-KEYWORD,'; file_ext='keyword.json' ;;
-            ipcidr) pattern='IP-CIDR'; file_ext='ipcidr.json' ;;
+            domain) pattern='DOMAIN,' ;;
+            suffix) pattern='DOMAIN-SUFFIX,' ;;
+            keyword) pattern='DOMAIN-KEYWORD,' ;;
+            ipcidr) pattern='IP-CIDR' ;;
         esac
-        tmp=$(grep "$pattern" "$dir/$name.yaml" | sed \
-            -e "s/^DOMAIN-//" -e "s/^IP-CIDR6,//" -e "s/,no-resolve//")
-        [ -n "$tmp" ] && tmp_files[$k]="$tmp"
+        tmp=$(grep "$pattern" "$dir/$name.yaml")
+        [ -n "$tmp" ] && {
+            if [ "$k" == "ipcidr" ]; then
+                tmp=$(echo "$tmp" | sed 's/^IP-CIDR,//;s/^IP-CIDR6,//;s/,no-resolve//')
+            else
+                tmp=$(echo "$tmp" | sed "s/^$pattern//")
+            fi
+            tmp_files[$k]="$tmp"
+        }
     done
 
     # 生成 JSON 文件
@@ -38,6 +42,5 @@ for dir in ./rules/*; do
         echo '}'
     } > "$name.json"
 
-    # 编译 srs 文件
     ./sing-box rule-set compile "$name.json" -o "$name.srs"
 done
