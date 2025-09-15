@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 遍历 rules 目录
-for dir 在 ./rules/*; do
+for dir in ./rules/*; do
     [ -d "$dir" ] || continue
     list_i=$(basename "$dir")
     mkdir -p "$list_i"
@@ -18,7 +18,7 @@ for dir 在 ./rules/*; do
     declare -A json_keys=( [domain]="domain" [suffix]="domain_suffix" [keyword]="domain_keyword" [ipcidr]="ip_cidr" )
 
     # 转成 JSON
-    for k 在 domain suffix keyword ipcidr; do
+    for k in domain suffix keyword ipcidr; do
         file="$list_i/$k.json"
         [ -f "$file" ] || continue
         sed -i '1s/^/      "'"${json_keys[$k]}"'": [\n/;s/^/        "/;s/$/",/;$ s/,$/\n      ],/' "$file"
@@ -28,7 +28,7 @@ for dir 在 ./rules/*; do
     if [ -f "$list_i.json" ]; then
         sed -i '1s/^/{\n  "version": 2,\n  "rules": [\n    {\n/' "$list_i.json"
         sed -i '$ s/,$/\n    },\n    {/' "$list_i.json"
-        for k 在 domain suffix keyword ipcidr; do
+        for k in domain suffix keyword ipcidr; do
             [ -f "$list_i/$k.json" ] && cat "$list_i/$k.json" >> "$list_i.json"
         done
     else
