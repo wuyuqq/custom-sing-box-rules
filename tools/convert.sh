@@ -22,15 +22,22 @@ for dir in ./rules/*; do
             sed -i "1s/^/      \"${json_keys[$k]}\": [\n/" "$file"
             sed -i '$ s/,$/\n      ],/' "$file"
         else
-            rm -f "$file"  # 空文件删除
+            rm -f "$file"
         fi
     done
 
     # 合并 JSON 文件
-    echo "{\n  \"version\": 2,\n  \"rules\": [\n    {" > "$name.json"
+    cat > "$name.json" <<EOF
+{
+  "version": 2,
+  "rules": [
+    {
+EOF
+
     for k in domain suffix keyword ipcidr; do
         [ -f "$name/$k.json" ] && cat "$name/$k.json" >> "$name.json"
     done
+
     # 结尾修复
     sed -i '$ s/,$/\n    }\n  ]\n}/' "$name.json"
 
