@@ -17,7 +17,7 @@ for dir 在 ./rules/*; do
     # 处理文件内容并加上 JSON 键
     for k in domain suffix keyword ipcidr; do
         file="$name/$k.json"
-        if [ -s "$file" ]; 键，然后
+        if [ -s "$file" ]; then
             sed -i 's/^/        "/;s/$/",/' "$file"
             sed -i "1s/^/      \"${json_keys[$k]}\": [\n/" "$file"
             sed -i '$ s/,$/\n      ],/' "$file"
