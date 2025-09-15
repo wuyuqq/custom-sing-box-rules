@@ -1,49 +1,42 @@
 #!/bin/bash
-
-# 遍历 rules 目录
+# 处理文件
 for dir in ./rules/*; do
     [ -d "$dir" ] || continue
-    list_i=$(basename "$dir")
-    mkdir -p "$list_i"
-
-    yaml_file="$dir/$list_i.yaml"
+    name=$(basename "$dir")
+    mkdir -p "$name"
 
     # 归类
-    grep -q 'DOMAIN-SUFFIX,' "$yaml_file" && grep 'DOMAIN-SUFFIX,' "$yaml_file" | sed 's/^DOMAIN-SUFFIX,//' > "$list_i/suffix.json"
-    grep -q 'DOMAIN,' "$yaml_file" && grep 'DOMAIN,' "$yaml_file" | sed 's/^DOMAIN,//' >> "$list_i/domain.json"
-    grep -q 'DOMAIN-KEYWORD,' "$yaml_file" && grep 'DOMAIN-KEYWORD,' "$yaml_file" | sed 's/^DOMAIN-KEYWORD,//' > "$list_i/keyword.json"
-    grep -q 'IP-CIDR' "$yaml_file" && grep 'IP-CIDR' "$yaml_file" | sed 's/^IP-CIDR,//;s/^IP-CIDR6,//;s/,no-resolve//' > "$list_i/ipcidr.json"
+    grep 'DOMAIN-SUFFIX,' "$dir/$name.yaml" | sed 's/^DOMAIN-SUFFIX,//' > "$name/suffix.json"
+    grep 'DOMAIN,' "$dir/$name.yaml" | sed 's/^DOMAIN,//' > "$name/domain.json"
+    grep 'DOMAIN-KEYWORD,' "$dir/$name.yaml" | sed 's/^DOMAIN-KEYWORD,//' > "$name/keyword.json"
+    grep 'IP-CIDR' "$dir/$name.yaml" | sed 's/^IP-CIDR,//;s/^IP-CIDR6,//;s/,no-resolve//' > "$name/ipcidr.json"
 
-    # 类型对应 key
+    # json key 映射
     declare -A json_keys=( [domain]="domain" [suffix]="domain_suffix" [keyword]="domain_keyword" [ipcidr]="ip_cidr" )
 
-    # 转成 JSON
-    for k in domain suffix keyword ipcidr; do
-        file="$list_i/$k.json"
-        [ -f "$file" ] || continue
-        sed -i '1s/^/      "'"${json_keys[$k]}"'": [\n/;s/^/        "/;s/$/",/;$ s/,$/\n      ],/' "$file"
+    # 处理文件内容并加上 JSON 键
+    for k 在 domain suffix keyword ipcidr; do
+        file="$name/$k.json"
+        if [ -s "$file" ]; then
+            sed -i 's/^/        "/;s/$/",/' "$file"
+            sed -i "1s/^/      \"${json_keys[$k]}\": [\n/" "$file"
+            sed -i '$ s/,$/\n      ],/' "$file"
+        else
+            rm -f "$file"  # 空文件删除
+        fi
     done
 
-    # 合并顺序：domain → suffix → keyword → ipcidr
-    if [ -f "$list_i.json" ]; then
-        sed -i '1s/^/{\n  "version": 2,\n  "rules": [\n    {\n/' "$list_i.json"
-        sed -i '$ s/,$/\n    },\n    {/' "$list_i.json"
-        for k in domain suffix keyword ipcidr; do
-            [ -f "$list_i/$k.json" ] && cat "$list_i/$k.json" >> "$list_i.json"
-        done
-    else
-        for k in domain suffix keyword ipcidr; do
-            [ -f "$list_i/$k.json" ] && cat "$list_i/$k.json" >> "$list_i.json"
-        done
-        sed -i '1s/^/{\n  "version": 2,\n  "rules": [\n    {\n/' "$list_i.json"
-    fi
+    # 合并 JSON 文件
+    echo "{\n  \"version\": 2,\n  \"rules\": [\n    {" > "$name.json"
+    for k in domain suffix keyword ipcidr; do
+        [ -f "$name/$k.json" ] && cat "$name/$k.json" >> "$name.json"
+    done
+    # 结尾修复
+    sed -i '$ s/,$/\n    }\n  ]\n}/' "$name.json"
 
-    # 修复结尾
-    sed -i '$ s/,$/\n    }\n  ]\n}/' "$list_i.json"
+    # 清理临时文件
+    rm -r "$name"
 
-    # 清理临时目录
-    rm -r "$list_i"
-
-    # 编译
-    ./sing-box rule-set compile "$list_i.json" -o "$list_i.srs"
+    # 编译 srs 文件
+    ./sing-box rule-set compile "$name.json" -o "$name.srs"
 done
