@@ -40,6 +40,7 @@ jobs:
             [Spotify]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Spotify.list
             [TikTok]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/TikTok.list
             [Speedtest]=https://raw.githubusercontent.com/dler-io/Rules/master/Surge/Surge%203/Provider/Speedtest.list
+            [AI]=https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list
           )
 
           for k in "${!urls[@]}"; do
@@ -78,6 +79,7 @@ jobs:
             [Spotify]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
             [TikTok]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
             [Speedtest]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
+            [AI]='^(DOMAIN|DOMAIN-SUFFIX|DOMAIN-KEYWORD|IP-CIDR|IP-CIDR6)'
           )
 
           for l in "${!patterns[@]}"; do
