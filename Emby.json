@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "domain_suffix": [
+        "imetyou.top",
+        "123456.al",
+        "bangumi.ca",
+        "emby.wtf",
+        "term.wtf"
+      ]
+    }
+  ]
+}
