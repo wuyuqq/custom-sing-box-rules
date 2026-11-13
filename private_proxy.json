@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "domain_suffix": [
+        "rarbgmirror.com",
+        "javbus.com",
+        "javdb.com",
+        "sehuatang.net",
+        "miru.cloud",
+        "torrentgalaxy.to",
+        "xiaoya.pro",
+        "javcdn.cc",
+        "lmjd2.app"
+      ]
+    }
+  ]
+}
